@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Task, Announcement, Material, User } from '../types';
 import * as api from '../../api/dataService';
 import { toast } from 'sonner';
@@ -11,15 +11,15 @@ interface DataContextType {
   users: User[];
   refreshData: () => Promise<void>;
   addTask: (task: Record<string, any>) => Promise<void>;
-  updateTask: (id: string, updatedTask: Partial<Task>) => Promise<void>;
+  updateTask: (id: string, updatedTask: Record<string, any>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   submitTaskData: (id: string, link?: string, file?: string) => Promise<void>;
   cancelTaskSubmission: (id: string) => Promise<void>;
   addAnnouncement: (ann: Record<string, any>) => Promise<void>;
-  updateAnnouncement: (id: string, updatedAnnouncement: Partial<Announcement>) => Promise<void>;
+  updateAnnouncement: (id: string, updatedAnnouncement: Record<string, any>) => Promise<void>;
   deleteAnnouncement: (id: string) => Promise<void>;
   addMaterial: (mat: Record<string, any>) => Promise<void>;
-  updateMaterial: (id: string, updatedMaterial: Partial<Material>) => Promise<void>;
+  updateMaterial: (id: string, updatedMaterial: Record<string, any>) => Promise<void>;
   deleteMaterial: (id: string) => Promise<void>;
   addUser: (user: Partial<User>) => Promise<void>;
   updateUser: (id: string, updatedUser: Partial<User>) => Promise<void>;
@@ -35,12 +35,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [users, setUsers] = useState<User[]>([]);
   const { userId } = useRole();
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     try {
-      const tsks = await api.fetchTasks().catch(err => { console.error('fetchTasks error:', err); return []; });
-      const anns = await api.fetchAnnouncements().catch(err => { console.error('fetchAnnouncements error:', err); return []; });
-      const mats = await api.fetchMaterials().catch(err => { console.error('fetchMaterials error:', err); return []; });
-      const usrs = await api.fetchUsers().catch(err => { console.error('fetchUsers error:', err); return []; });
+      const [tsks, anns, mats, usrs] = await Promise.all([
+        api.fetchTasks().catch(err => { console.error('fetchTasks error:', err); return []; }),
+        api.fetchAnnouncements().catch(err => { console.error('fetchAnnouncements error:', err); return []; }),
+        api.fetchMaterials().catch(err => { console.error('fetchMaterials error:', err); return []; }),
+        api.fetchUsers().catch(err => { console.error('fetchUsers error:', err); return []; }),
+      ]);
 
       setTasks(tsks);
       setAnnouncements(anns);
@@ -50,17 +52,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       console.error('Gagal mengambil data dari server', err);
       toast.error('Kehilangan koneksi ke Server');
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshData();
-  }, [userId]);
+  }, [refreshData, userId]);
 
   const addTask = async (taskData: Record<string, any>) => {
     const newTask = await api.createTask(taskData);
     setTasks(prev => [...prev, newTask]);
   };
-  const updateTask = async (id: string, taskData: Partial<Task>) => {
+  const updateTask = async (id: string, taskData: Record<string, any>) => {
     const updated = await api.updateTask(id, taskData);
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updated } : t));
   };
@@ -75,12 +77,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     await api.submitTaskStatus(id, userId, false);
-    // Optimistic Update
     setTasks(prev => prev.map(t => {
       if (t.id === id) {
         const newComps = t.completedBy ? [...t.completedBy] : [];
         if (!newComps.includes(userId)) newComps.push(userId);
-        return { ...t, completedBy: newComps };
+        return { ...t, completedBy: newComps, status: 'submitted' };
       }
       return t;
     }));
@@ -89,11 +90,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const cancelTaskSubmission = async (id: string) => {
     if (!userId) return;
     await api.submitTaskStatus(id, userId, true);
-    // Optimistic Update
     setTasks(prev => prev.map(t => {
       if (t.id === id) {
         const newComps = t.completedBy ? t.completedBy.filter(uid => uid !== userId) : [];
-        return { ...t, completedBy: newComps };
+        const now = new Date();
+        const deadline = t.deadline ? new Date(t.deadline) : null;
+        const status = deadline && deadline < now ? 'overdue' : 'pending';
+        return { ...t, completedBy: newComps, status };
       }
       return t;
     }));
@@ -103,7 +106,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const newAnn = await api.createAnnouncement(ann);
     setAnnouncements(prev => [newAnn, ...prev]);
   };
-  const updateAnnouncement = async (id: string, annData: Partial<Announcement>) => {
+  const updateAnnouncement = async (id: string, annData: Record<string, any>) => {
     const updated = await api.updateAnnouncement(id, annData);
     setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, ...updated } : a));
   };
@@ -116,7 +119,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const newMat = await api.createMaterial(mat);
     setMaterials(prev => [newMat, ...prev]);
   };
-  const updateMaterial = async (id: string, matData: Partial<Material>) => {
+  const updateMaterial = async (id: string, matData: Record<string, any>) => {
     const updated = await api.updateMaterial(id, matData);
     setMaterials(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
   };

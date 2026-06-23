@@ -15,8 +15,7 @@ export const Announcements = () => {
   const { announcements, addAnnouncement, updateAnnouncement, deleteAnnouncement } = useData();
   const { role } = useRole();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  
-  // Form Modal State
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
 
@@ -35,24 +34,28 @@ export const Announcements = () => {
 
   const handleFormSubmit = (annData: Partial<Announcement>) => {
     if (editingAnnouncement) {
-      // Edit mode
-      updateAnnouncement(editingAnnouncement.id, annData);
-      toast.success('Pengumuman berhasil diperbarui!');
-    } else {
-      // Add mode
-      const newAnnouncement: Announcement = {
-        id: `ann-${Date.now()}`,
-        title: annData.title || '',
-        content: annData.content || '',
-        author: annData.author || 'Komti',
-        date: new Date().toISOString(),
-        priority: annData.priority as 'low' | 'normal' | 'high' || 'normal',
+      updateAnnouncement(editingAnnouncement.id, {
+        title: annData.title,
+        content: annData.content,
+        author: annData.author,
+        priority: annData.priority,
         imageUrl: annData.imageUrl,
         attachmentUrl: annData.attachmentUrl,
         imageFile: (annData as any).imageFile,
         pdfFile: (annData as any).pdfFile
-      };
-      addAnnouncement(newAnnouncement);
+      });
+      toast.success('Pengumuman berhasil diperbarui!');
+    } else {
+      addAnnouncement({
+        title: annData.title || '',
+        content: annData.content || '',
+        author: annData.author || 'Komti',
+        priority: annData.priority || 'normal',
+        imageUrl: annData.imageUrl,
+        attachmentUrl: annData.attachmentUrl,
+        imageFile: (annData as any).imageFile,
+        pdfFile: (annData as any).pdfFile
+      });
       toast.success('Pengumuman baru berhasil dibuat!');
     }
     setIsFormOpen(false);
@@ -82,10 +85,10 @@ export const Announcements = () => {
       </div>
 
       <ImageModal imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
-      
-      <AnnouncementFormModal 
-        isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
+
+      <AnnouncementFormModal
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
         onSubmit={handleFormSubmit}
         onDelete={handleDeleteAnnouncement}
         initialData={editingAnnouncement}
@@ -95,9 +98,9 @@ export const Announcements = () => {
         {announcements.map(ann => (
           <Card key={ann.id} className="relative overflow-hidden group/card hover:shadow-md transition-all">
             <div className={`absolute top-0 left-0 w-1.5 h-full ${ann.priority === 'high' ? 'bg-red-500' : ann.priority === 'normal' ? 'bg-amber-400' : 'bg-blue-400'}`}></div>
-            
+
             {ann.imageUrl && (
-              <div 
+              <div
                 className="w-full h-48 overflow-hidden relative border-b border-neutral-100 cursor-pointer group"
                 onClick={() => setSelectedImage(ann.imageUrl!)}
               >

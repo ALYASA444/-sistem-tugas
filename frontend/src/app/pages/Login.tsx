@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useRole } from '../context/RoleContext';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -11,6 +11,7 @@ import { loginWithBackend } from '../../api/authService';
 export const Login = () => {
   const { login } = useRole();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -20,17 +21,16 @@ export const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMsg('');
-    
+
     try {
-      // Panggil backend API
       const data = await loginWithBackend(username, password);
-      
-      // Baca role dari hasil kembalian Supabase yang diteruskan backend
-      // Default ke 'mahasiswa' jika tidak ada (untuk keamanan data)
+
       const userRole = data.role && data.role === 'komti' ? 'komti' : 'mahasiswa';
-      
-      login(userRole as 'komti' | 'mahasiswa', data.user.id);
-      navigate('/');
+
+      login(userRole as 'komti' | 'mahasiswa', data.user.id, data.session?.access_token);
+
+      const redirectTo = searchParams.get('return') || '/';
+      navigate(redirectTo);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login gagal.';
       setErrorMsg(errorMessage);
@@ -45,7 +45,7 @@ export const Login = () => {
         <GraduationCap className="w-10 h-10" />
         <h1 className="text-3xl font-bold tracking-tight">SistemKelas</h1>
       </div>
-      
+
       <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm">
         <CardHeader className="space-y-1 pb-6 text-center">
           <CardTitle className="text-2xl font-semibold tracking-tight">Masuk ke Akun</CardTitle>
@@ -57,11 +57,11 @@ export const Login = () => {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="username">Username / NIM</Label>
-              <Input 
-                id="username" 
-                type="text" 
-                placeholder="Misal: admin atau 22010101" 
-                required 
+              <Input
+                id="username"
+                type="text"
+                placeholder="Misal: admin atau 22010101"
+                required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="bg-white"
@@ -69,17 +69,17 @@ export const Login = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Kata Sandi</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="••••••••" 
-                required 
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-white"
               />
             </div>
-            
+
             <div className="pt-4 flex flex-col gap-3">
               {errorMsg && <p className="text-sm text-red-500 text-center">{errorMsg}</p>}
               <Button type="submit" disabled={isLoading} className="w-full bg-indigo-600 hover:bg-indigo-700 h-11">

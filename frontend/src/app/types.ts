@@ -7,11 +7,13 @@ export type Task = {
   requiresSubmission: boolean;
   status: 'pending' | 'submitted' | 'overdue';
   imageUrl?: string;
-  attachmentUrl?: string; // Komti's attached PDF or file
-  submissionUrl?: string; // Link provided by Komti to collect tasks (e.g., GDrive Folder)
-  submittedLink?: string; // Mahasiswa's submitted link (Legacy)
-  submittedFile?: string; // Mahasiswa's submitted file name (Legacy)
-  completedBy?: string[]; // Arrays of UUIDs of users who completed it
+  attachmentUrl?: string;
+  submissionUrl?: string;
+  submittedLink?: string;
+  submittedFile?: string;
+  completedBy?: string[];
+  imageFile?: File;
+  pdfFile?: File;
 };
 
 export type Announcement = {
@@ -22,7 +24,9 @@ export type Announcement = {
   date: string;
   priority: 'low' | 'normal' | 'high';
   imageUrl?: string;
-  attachmentUrl?: string; // Uploaded PDF
+  attachmentUrl?: string;
+  imageFile?: File;
+  pdfFile?: File;
 };
 
 export type Material = {
@@ -33,7 +37,9 @@ export type Material = {
   dateAdded: string;
   type: 'pdf' | 'video' | 'link';
   imageUrl?: string;
-  attachmentUrl?: string; // Uploaded PDF
+  attachmentUrl?: string;
+  imageFile?: File;
+  pdfFile?: File;
 };
 
 export type User = {

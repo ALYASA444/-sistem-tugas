@@ -12,13 +12,13 @@ export const Layout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const currentUser = users.find(u => u.id === userId);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    const returnUrl = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?return=${returnUrl}`} replace />;
   }
 
   const navLinks = [
@@ -37,17 +37,15 @@ export const Layout = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-neutral-50 text-neutral-900 font-sans">
-      
-      {/* Mobile Sidebar Overlay */}
+
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-neutral-900/50 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <aside 
+      <aside
         className={`fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-64 bg-white border-r border-neutral-200 flex flex-col justify-between transform transition-transform duration-300 ease-in-out ${
           isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
@@ -58,7 +56,7 @@ export const Layout = () => {
               <GraduationCap className="w-6 h-6" />
               <h1 className="text-xl font-bold tracking-tight">SistemKelas</h1>
             </div>
-            <button 
+            <button
               className="lg:hidden p-2 -mr-2 text-neutral-500 hover:bg-neutral-100 rounded-md"
               onClick={() => setIsMobileMenuOpen(false)}
             >
@@ -84,7 +82,7 @@ export const Layout = () => {
             ))}
           </nav>
         </div>
-        
+
         <div className="p-5 border-t border-neutral-200 bg-neutral-50/50">
           <div className="mb-4">
             <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Masuk Sebagai:</p>
@@ -117,10 +115,9 @@ export const Layout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 bg-neutral-50 h-screen overflow-hidden relative">
         <header className="h-16 flex-none bg-white/80 backdrop-blur-md border-b border-neutral-200 flex items-center px-4 lg:px-8 z-10 sticky top-0">
-          <button 
+          <button
             className="lg:hidden p-2 -ml-2 mr-3 text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors"
             onClick={() => setIsMobileMenuOpen(true)}
           >
@@ -130,7 +127,7 @@ export const Layout = () => {
             {pageTitle}
           </h2>
         </header>
-        
+
         <div className="flex-1 overflow-auto overflow-x-hidden p-4 lg:p-8 w-full">
           <div className="max-w-5xl mx-auto w-full pb-16">
             <Outlet />

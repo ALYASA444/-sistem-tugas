@@ -11,19 +11,20 @@ import { ImageModal } from '../components/ImageModal';
 import { TaskFormModal } from '../components/TaskFormModal';
 import { Task } from '../types';
 
+const safeDate = (d: string | undefined | null) => {
+  const t = new Date(d || '');
+  return isNaN(t.getTime()) ? null : t;
+};
+
 export const Tasks = () => {
   const { tasks, users, submitTaskData, cancelTaskSubmission, addTask, updateTask, deleteTask } = useData();
   const { role, userId } = useRole();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  
-  // Form Modal State
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const submitTask = (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
     submitTaskData(taskId);
     toast.success('Tugas ditandai telah selesai/dikumpulkan!');
   };
@@ -51,29 +52,32 @@ export const Tasks = () => {
 
     try {
       if (editingTask) {
-        // Edit mode
         await updateTask(editingTask.id, {
-          ...taskData,
-          deadline: isoDeadline
+          title: taskData.title,
+          course: taskData.course,
+          description: taskData.description,
+          deadline: isoDeadline,
+          requiresSubmission: taskData.requiresSubmission,
+          submissionUrl: taskData.submissionUrl,
+          imageUrl: taskData.imageUrl,
+          attachmentUrl: taskData.attachmentUrl,
+          imageFile: (taskData as any).imageFile,
+          pdfFile: (taskData as any).pdfFile
         });
         toast.success('Tugas berhasil diperbarui!');
       } else {
-        // Add mode
-        const newTask: Task = {
-          id: `task-${Date.now()}`,
-          title: taskData.title || '',
-          course: taskData.course || '',
-          description: taskData.description || '',
+        await addTask({
+          title: taskData.title,
+          course: taskData.course,
+          description: taskData.description,
           deadline: isoDeadline,
           requiresSubmission: taskData.requiresSubmission ?? true,
           submissionUrl: taskData.submissionUrl,
           imageUrl: taskData.imageUrl,
           attachmentUrl: taskData.attachmentUrl,
-          status: 'pending',
           imageFile: (taskData as any).imageFile,
           pdfFile: (taskData as any).pdfFile
-        };
-        await addTask(newTask);
+        });
         toast.success('Tugas baru berhasil ditambahkan!');
       }
       setIsFormOpen(false);
@@ -96,7 +100,14 @@ export const Tasks = () => {
     }
   };
 
-  const sortedTasks = [...tasks].sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+  const sortedTasks = [...tasks].sort((a, b) => {
+    const da = safeDate(a.deadline);
+    const db = safeDate(b.deadline);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da.getTime() - db.getTime();
+  });
 
   return (
     <div className="space-y-6">
@@ -114,21 +125,26 @@ export const Tasks = () => {
       </div>
 
       <ImageModal imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
-      
-      <TaskFormModal 
-        isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
+
+      <TaskFormModal
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
         onSubmit={handleFormSubmit}
         onDelete={handleDeleteTask}
         initialData={editingTask}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sortedTasks.map(task => (
+        {sortedTasks.map(task => {
+          const taskDeadline = safeDate(task.deadline);
+          const isOverdue = taskDeadline && taskDeadline < new Date();
+          const isCompleted = (task.completedBy || []).includes(userId!);
+
+          return (
           <Card key={task.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
             <div>
               {task.imageUrl && (
-                <div 
+                <div
                   className="w-full h-32 overflow-hidden rounded-t-xl relative cursor-pointer group"
                   onClick={() => setSelectedImage(task.imageUrl!)}
                 >
@@ -147,46 +163,46 @@ export const Tasks = () => {
                         <Edit className="h-3 w-3" />
                       </Button>
                     )}
-                    {(task.completedBy || []).includes(userId!) ? (
+                    {isCompleted ? (
                       <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200" variant="secondary">
                         Selesai
                       </Badge>
                     ) : (
-                      <Badge variant={new Date(task.deadline) < new Date() ? 'destructive' : 'secondary'} className={new Date(task.deadline) >= new Date() ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : ''}>
-                        {new Date(task.deadline) < new Date() ? 'Terlambat' : 'Menunggu'}
+                      <Badge variant={isOverdue ? 'destructive' : 'secondary'} className={!isOverdue ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : ''}>
+                        {isOverdue ? 'Terlambat' : 'Menunggu'}
                       </Badge>
                     )}
                   </div>
                 </div>
                 <CardTitle className="text-lg leading-tight">{task.title}</CardTitle>
                 <div className={`mt-3 flex w-fit inline-flex items-center px-3 py-1.5 rounded-md font-bold text-sm border shadow-sm ${
-                  (task.completedBy || []).includes(userId!) 
+                  isCompleted
                     ? 'bg-neutral-50 text-neutral-500 border-neutral-200'
-                    : new Date(task.deadline) < new Date() 
-                      ? 'bg-red-50 text-red-600 border-red-200' 
+                    : isOverdue
+                      ? 'bg-red-50 text-red-600 border-red-200'
                       : 'bg-amber-50 text-amber-700 border-amber-200'
                 }`}>
                   <Clock className="mr-2 h-4 w-4" />
-                  Tenggat: {format(new Date(task.deadline), 'dd MMM yyyy, HH:mm')}
+                  Tenggat: {taskDeadline ? format(taskDeadline, 'dd MMM yyyy, HH:mm') : 'Tidak ada deadline'}
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-neutral-600 line-clamp-3">{task.description}</p>
-                
+
                 {task.attachmentUrl && (
                   <a href={task.attachmentUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center text-sm text-indigo-600 bg-indigo-50 p-2 rounded-md hover:bg-indigo-100 transition-colors">
                     <FileIcon className="h-4 w-4 mr-2 shrink-0" />
                     <span className="truncate">Buka File PDF Terlampir</span>
                   </a>
                 )}
-                
+
                 {task.requiresSubmission && task.submissionUrl && (
                   <div className="mt-4 p-3 bg-blue-50/50 rounded-lg border border-blue-100">
                     <p className="text-xs font-semibold text-blue-900 mb-2">Tautan Pengumpulan (Admin):</p>
-                    <a 
-                      href={task.submissionUrl} 
-                      target="_blank" 
-                      rel="noreferrer" 
+                    <a
+                      href={task.submissionUrl}
+                      target="_blank"
+                      rel="noreferrer"
                       className="flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-md transition-colors"
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
@@ -194,18 +210,18 @@ export const Tasks = () => {
                     </a>
                   </div>
                 )}
-                
-                {role === 'mahasiswa' && (task.completedBy || []).includes(userId!) && (
+
+                {role === 'mahasiswa' && isCompleted && (
                   <div className="mt-4 p-2 bg-emerald-50 rounded border border-emerald-100 text-xs text-emerald-800 text-center">
                     Anda telah menandai tugas ini selesai.
                   </div>
                 )}
               </CardContent>
             </div>
-            
+
             <CardFooter className="pt-3 border-t bg-neutral-50 rounded-b-xl flex-col gap-2">
               {role === 'mahasiswa' ? (
-                (task.completedBy || []).includes(userId!) ? (
+                isCompleted ? (
                   <>
                     <Button variant="ghost" className="w-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" disabled>
                       <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -217,8 +233,8 @@ export const Tasks = () => {
                     </Button>
                   </>
                 ) : (
-                  <Button 
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" 
+                  <Button
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                     onClick={() => submitTask(task.id)}
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" /> Tandai Telah Selesai
@@ -236,7 +252,8 @@ export const Tasks = () => {
               )}
             </CardFooter>
           </Card>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

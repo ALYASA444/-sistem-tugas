@@ -14,7 +14,6 @@ export const Materials = () => {
   const { role } = useRole();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // Form Modal State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
 
@@ -33,24 +32,28 @@ export const Materials = () => {
 
   const handleFormSubmit = (matData: Partial<Material>) => {
     if (editingMaterial) {
-      // Edit mode
-      updateMaterial(editingMaterial.id, matData);
-      toast.success('Materi berhasil diperbarui!');
-    } else {
-      // Add mode
-      const newMaterial: Material = {
-        id: `mat-${Date.now()}`,
-        title: matData.title || '',
-        course: matData.course || '',
-        url: matData.url || '',
-        type: matData.type as 'pdf' | 'video' | 'link' || 'link',
-        dateAdded: new Date().toISOString(),
+      updateMaterial(editingMaterial.id, {
+        title: matData.title,
+        course: matData.course,
+        url: matData.url,
+        type: matData.type,
         imageUrl: matData.imageUrl,
         attachmentUrl: matData.attachmentUrl,
         imageFile: (matData as any).imageFile,
         pdfFile: (matData as any).pdfFile
-      };
-      addMaterial(newMaterial);
+      });
+      toast.success('Materi berhasil diperbarui!');
+    } else {
+      addMaterial({
+        title: matData.title,
+        course: matData.course,
+        url: matData.url || '',
+        type: matData.type || 'link',
+        imageUrl: matData.imageUrl,
+        attachmentUrl: matData.attachmentUrl,
+        imageFile: (matData as any).imageFile,
+        pdfFile: (matData as any).pdfFile
+      });
       toast.success('Materi baru berhasil diunggah!');
     }
     setIsFormOpen(false);
@@ -88,10 +91,10 @@ export const Materials = () => {
       </div>
 
       <ImageModal imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
-      
-      <MaterialFormModal 
-        isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
+
+      <MaterialFormModal
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
         onSubmit={handleFormSubmit}
         onDelete={handleDeleteMaterial}
         initialData={editingMaterial}
@@ -102,7 +105,7 @@ export const Materials = () => {
           <Card key={material.id} className="hover:border-indigo-200 transition-colors flex flex-col justify-between">
             <div>
               {material.imageUrl && (
-                <div 
+                <div
                   className="w-full h-32 overflow-hidden rounded-t-xl relative cursor-pointer group"
                   onClick={() => setSelectedImage(material.imageUrl!)}
                 >
