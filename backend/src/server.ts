@@ -10,10 +10,15 @@ dotenv.config();
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 
+app.set('trust proxy', 1);
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
 const multiUpload = upload.fields([
   { name: 'imageFile', maxCount: 1 },
   { name: 'pdfFile', maxCount: 1 }
@@ -87,9 +92,12 @@ function requireFields(body: any, fields: string[]): string | null {
 }
 
 function isValidISODate(str: string): boolean {
-  if (!str) return false;
+  if (!str || typeof str !== 'string') return false;
+  const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+  if (!isoRegex.test(str)) return false;
   const d = new Date(str);
-  return !isNaN(d.getTime());
+  if (isNaN(d.getTime())) return false;
+  return d.toISOString().slice(0, 10) === str.slice(0, 10);
 }
 
 // ---------- Storage Helpers ----------
@@ -262,7 +270,13 @@ app.put('/api/users/:id', authenticate, requireKomti, async (req, res) => {
   const { id } = req.params;
   const { name, nim, role, password } = req.body;
   try {
-    if (password?.trim()) await supabase.auth.admin.updateUserById(id, { password });
+    if (password?.trim()) {
+      const { error: pwErr } = await supabase.auth.admin.updateUserById(id, { password });
+      if (pwErr) {
+        console.error('[API USERS] Password update error:', pwErr.message);
+        return res.status(400).json({ error: `Gagal memperbarui password: ${pwErr.message}` });
+      }
+    }
     const { data, error } = await supabase.from('profiles').update({
       full_name: name, nim, role
     }).eq('id', id).select().single();

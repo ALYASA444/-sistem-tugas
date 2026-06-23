@@ -30,40 +30,50 @@ export const Materials = () => {
     }
   };
 
-  const handleFormSubmit = (matData: Partial<Material>) => {
-    if (editingMaterial) {
-      updateMaterial(editingMaterial.id, {
-        title: matData.title,
-        course: matData.course,
-        url: matData.url,
-        type: matData.type,
-        imageUrl: matData.imageUrl,
-        attachmentUrl: matData.attachmentUrl,
-        imageFile: (matData as any).imageFile,
-        pdfFile: (matData as any).pdfFile
-      });
-      toast.success('Materi berhasil diperbarui!');
-    } else {
-      addMaterial({
-        title: matData.title,
-        course: matData.course,
-        url: matData.url || '',
-        type: matData.type || 'link',
-        imageUrl: matData.imageUrl,
-        attachmentUrl: matData.attachmentUrl,
-        imageFile: (matData as any).imageFile,
-        pdfFile: (matData as any).pdfFile
-      });
-      toast.success('Materi baru berhasil diunggah!');
+  const handleFormSubmit = async (matData: Partial<Material>) => {
+    try {
+      if (editingMaterial) {
+        await updateMaterial(editingMaterial.id, {
+          title: matData.title,
+          course: matData.course,
+          url: matData.url,
+          type: matData.type,
+          imageUrl: matData.imageUrl,
+          attachmentUrl: matData.attachmentUrl,
+          imageFile: (matData as any).imageFile,
+          pdfFile: (matData as any).pdfFile
+        });
+        toast.success('Materi berhasil diperbarui!');
+      } else {
+        await addMaterial({
+          title: matData.title,
+          course: matData.course,
+          url: matData.url || '',
+          type: matData.type || 'link',
+          imageUrl: matData.imageUrl,
+          attachmentUrl: matData.attachmentUrl,
+          imageFile: (matData as any).imageFile,
+          pdfFile: (matData as any).pdfFile
+        });
+        toast.success('Materi baru berhasil diunggah!');
+      }
+      setIsFormOpen(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Gagal menyimpan materi';
+      toast.error(errorMessage);
     }
-    setIsFormOpen(false);
   };
 
-  const handleDeleteMaterial = () => {
+  const handleDeleteMaterial = async () => {
     if (editingMaterial) {
-      deleteMaterial(editingMaterial.id);
-      toast.success('Materi berhasil dihapus!');
-      setIsFormOpen(false);
+      try {
+        await deleteMaterial(editingMaterial.id);
+        toast.success('Materi berhasil dihapus!');
+        setIsFormOpen(false);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Gagal menghapus materi';
+        toast.error(errorMessage);
+      }
     }
   };
 

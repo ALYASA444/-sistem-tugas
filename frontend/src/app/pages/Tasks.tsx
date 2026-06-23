@@ -24,14 +24,24 @@ export const Tasks = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const submitTask = (taskId: string) => {
-    submitTaskData(taskId);
-    toast.success('Tugas ditandai telah selesai/dikumpulkan!');
+  const submitTask = async (taskId: string) => {
+    try {
+      await submitTaskData(taskId);
+      toast.success('Tugas ditandai telah selesai/dikumpulkan!');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Gagal mengumpulkan tugas';
+      toast.error(errorMessage);
+    }
   };
 
-  const cancelSubmission = (taskId: string) => {
-    cancelTaskSubmission(taskId);
-    toast.info('Status pengumpulan dibatalkan.');
+  const cancelSubmission = async (taskId: string) => {
+    try {
+      await cancelTaskSubmission(taskId);
+      toast.info('Status pengumpulan dibatalkan.');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Gagal membatalkan pengumpulan';
+      toast.error(errorMessage);
+    }
   };
 
   const handleAddTask = () => {

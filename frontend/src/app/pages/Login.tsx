@@ -27,7 +27,14 @@ export const Login = () => {
 
       const userRole = data.role && data.role === 'komti' ? 'komti' : 'mahasiswa';
 
-      login(userRole as 'komti' | 'mahasiswa', data.user.id, data.session?.access_token);
+      const token = data.session?.access_token;
+      if (!token) {
+        setErrorMsg('Login gagal: tidak mendapatkan token sesi.');
+        setIsLoading(false);
+        return;
+      }
+
+      login(userRole as 'komti' | 'mahasiswa', data.user.id, token);
 
       const redirectTo = searchParams.get('return') || '/';
       navigate(redirectTo);

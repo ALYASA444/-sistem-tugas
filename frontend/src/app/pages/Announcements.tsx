@@ -32,40 +32,50 @@ export const Announcements = () => {
     }
   };
 
-  const handleFormSubmit = (annData: Partial<Announcement>) => {
-    if (editingAnnouncement) {
-      updateAnnouncement(editingAnnouncement.id, {
-        title: annData.title,
-        content: annData.content,
-        author: annData.author,
-        priority: annData.priority,
-        imageUrl: annData.imageUrl,
-        attachmentUrl: annData.attachmentUrl,
-        imageFile: (annData as any).imageFile,
-        pdfFile: (annData as any).pdfFile
-      });
-      toast.success('Pengumuman berhasil diperbarui!');
-    } else {
-      addAnnouncement({
-        title: annData.title || '',
-        content: annData.content || '',
-        author: annData.author || 'Komti',
-        priority: annData.priority || 'normal',
-        imageUrl: annData.imageUrl,
-        attachmentUrl: annData.attachmentUrl,
-        imageFile: (annData as any).imageFile,
-        pdfFile: (annData as any).pdfFile
-      });
-      toast.success('Pengumuman baru berhasil dibuat!');
+  const handleFormSubmit = async (annData: Partial<Announcement>) => {
+    try {
+      if (editingAnnouncement) {
+        await updateAnnouncement(editingAnnouncement.id, {
+          title: annData.title,
+          content: annData.content,
+          author: annData.author,
+          priority: annData.priority,
+          imageUrl: annData.imageUrl,
+          attachmentUrl: annData.attachmentUrl,
+          imageFile: (annData as any).imageFile,
+          pdfFile: (annData as any).pdfFile
+        });
+        toast.success('Pengumuman berhasil diperbarui!');
+      } else {
+        await addAnnouncement({
+          title: annData.title || '',
+          content: annData.content || '',
+          author: annData.author || 'Komti',
+          priority: annData.priority || 'normal',
+          imageUrl: annData.imageUrl,
+          attachmentUrl: annData.attachmentUrl,
+          imageFile: (annData as any).imageFile,
+          pdfFile: (annData as any).pdfFile
+        });
+        toast.success('Pengumuman baru berhasil dibuat!');
+      }
+      setIsFormOpen(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Gagal menyimpan pengumuman';
+      toast.error(errorMessage);
     }
-    setIsFormOpen(false);
   };
 
-  const handleDeleteAnnouncement = () => {
+  const handleDeleteAnnouncement = async () => {
     if (editingAnnouncement) {
-      deleteAnnouncement(editingAnnouncement.id);
-      toast.success('Pengumuman berhasil dihapus!');
-      setIsFormOpen(false);
+      try {
+        await deleteAnnouncement(editingAnnouncement.id);
+        toast.success('Pengumuman berhasil dihapus!');
+        setIsFormOpen(false);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Gagal menghapus pengumuman';
+        toast.error(errorMessage);
+      }
     }
   };
 
