@@ -58,6 +58,12 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
   };
 
+  useEffect(() => {
+    const onAuthExpired = () => logout();
+    window.addEventListener('auth:expired', onAuthExpired);
+    return () => window.removeEventListener('auth:expired', onAuthExpired);
+  }, []);
+
   return (
     <RoleContext.Provider value={{ role, userId, token, isAuthenticated: role !== null, login, logout }}>
       {children}

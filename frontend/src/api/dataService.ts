@@ -18,8 +18,7 @@ function getAuthHeaders(): Record<string, string> {
 
 const handleResponse = async (response: Response): Promise<any> => {
   if (response.status === 401) {
-    localStorage.removeItem('sistemkelas_auth');
-    window.location.href = '/login';
+    window.dispatchEvent(new CustomEvent('auth:expired'));
     throw new Error('Sesi berakhir. Silakan login ulang.');
   }
   const text = await response.text();
