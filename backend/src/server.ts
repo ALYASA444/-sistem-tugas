@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import sharp from 'sharp';
+import { execSync } from 'child_process';
 import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
@@ -575,6 +576,34 @@ app.delete('/api/announcements/:id', authenticate, requireKomti, async (req, res
   res.json({ success: true });
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Backend Server running on http://localhost:${port}`);
+});
+
+server.on('error', (err: any) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${port} sudah dipakai. Mematikan proses lama...`);
+    try {
+      const isWin = process.platform === 'win32';
+      const cmd = isWin ? `netstat -ano | findstr ":${port}"` : `lsof -ti:${port}`;
+      const output = execSync(cmd, { encoding: 'utf8', timeout: 5000 });
+      const lines = output.split(/\r?\n/).filter(Boolean);
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        const pid = isWin ? parts[parts.length - 1] : parts[0];
+        if (pid && /^\d+$/.test(pid) && pid !== '0') {
+          execSync(isWin ? `taskkill /F /PID ${pid}` : `kill -9 ${pid}`, { stdio: 'ignore' });
+          console.log(`Proses PID ${pid} dimatikan.`);
+        }
+      }
+    } catch {
+      console.error(`Tidak bisa mematikan proses di port ${port}.`);
+    }
+    setTimeout(() => {
+      server.close();
+      app.listen(port, () => {
+        console.log(`Backend Server running on http://localhost:${port} (restart)`);
+      });
+    }, 1500);
+  }
 });
