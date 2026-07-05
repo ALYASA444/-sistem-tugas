@@ -1,5 +1,12 @@
 import { Task, Announcement, Material, User } from '../app/types';
 
+export class AuthExpiredError extends Error {
+  constructor() {
+    super('Sesi berakhir. Mengarahkan ke login...');
+    this.name = 'AuthExpiredError';
+  }
+}
+
 const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api';
 
 function getAuthHeaders(): Record<string, string> {
@@ -19,7 +26,7 @@ function getAuthHeaders(): Record<string, string> {
 const handleResponse = async (response: Response): Promise<any> => {
   if (response.status === 401) {
     window.dispatchEvent(new CustomEvent('auth:expired'));
-    throw new Error('Sesi berakhir. Silakan login ulang.');
+    throw new AuthExpiredError();
   }
   const text = await response.text();
   if (!text) {

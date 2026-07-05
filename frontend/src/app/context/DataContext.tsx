@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Task, Announcement, Material, User } from '../types';
 import * as api from '../../api/dataService';
+import { AuthExpiredError } from '../../api/dataService';
 import { toast } from 'sonner';
 import { useRole } from './RoleContext';
 
@@ -37,21 +38,35 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshData = useCallback(async () => {
     let errorCount = 0;
+    let isAuthExpired = false;
 
-    const [tsks, anns, mats, usrs] = await Promise.all([
-      api.fetchTasks().catch(err => { console.error('fetchTasks error:', err); errorCount++; return []; }),
-      api.fetchAnnouncements().catch(err => { console.error('fetchAnnouncements error:', err); errorCount++; return []; }),
-      api.fetchMaterials().catch(err => { console.error('fetchMaterials error:', err); errorCount++; return []; }),
-      api.fetchUsers().catch(err => { console.error('fetchUsers error:', err); errorCount++; return []; }),
-    ]);
+    const handleError = (name: string, err: any) => {
+      if (err instanceof AuthExpiredError) { isAuthExpired = true; throw err; }
+      console.error(`${name} error:`, err);
+      errorCount++;
+      return [];
+    };
 
-    setTasks(tsks);
-    setAnnouncements(anns);
-    setMaterials(mats);
-    setUsers(usrs);
+    try {
+      const [tsks, anns, mats, usrs] = await Promise.all([
+        api.fetchTasks().catch(err => handleError('fetchTasks', err)),
+        api.fetchAnnouncements().catch(err => handleError('fetchAnnouncements', err)),
+        api.fetchMaterials().catch(err => handleError('fetchMaterials', err)),
+        api.fetchUsers().catch(err => handleError('fetchUsers', err)),
+      ]);
 
-    if (errorCount > 0) {
-      toast.error('Gagal mengambil data dari server. Periksa koneksi.');
+      setTasks(tsks);
+      setAnnouncements(anns);
+      setMaterials(mats);
+      setUsers(usrs);
+
+      if (errorCount > 0) {
+        toast.error('Gagal mengambil data dari server. Periksa koneksi.');
+      }
+    } catch (err) {
+      if (err instanceof AuthExpiredError) {
+        toast.info('Sesi berakhir. Mengarahkan ke halaman login...');
+      }
     }
   }, []);
 
