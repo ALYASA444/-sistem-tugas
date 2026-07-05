@@ -11,7 +11,7 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 interface TaskFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (taskData: Partial<Task>) => void;
+  onSubmit: (taskData: Partial<Task>) => Promise<void>;
   onDelete?: () => void;
   initialData?: Task | null;
 }
@@ -194,9 +194,9 @@ export const TaskFormModal = ({ isOpen, onClose, onSubmit, onDelete, initialData
     <DeleteConfirmDialog
       isOpen={isDeleteDialogOpen}
       onClose={() => setIsDeleteDialogOpen(false)}
-      onConfirm={() => {
+      onConfirm={async () => {
         if (onDelete) {
-          onDelete();
+          await onDelete();
           setIsDeleteDialogOpen(false);
         }
       }}

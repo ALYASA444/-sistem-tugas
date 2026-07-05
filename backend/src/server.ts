@@ -463,7 +463,7 @@ app.post('/api/materials', authenticate, requireKomti, multiUpload, async (req, 
   const missing = requireFields(req.body, ['title', 'course']);
   if (missing) return res.status(400).json({ error: missing });
 
-  let payload: any = { title, course, url: url || null, type };
+  let payload: any = { title, course, url: url && url.trim() ? url : '', type };
   const uploads = await processUploads(req.files);
   if (uploads.error) return res.status(400).json({ error: uploads.error });
   if (uploads.imageUrl) payload.image_url = uploads.imageUrl;
@@ -480,7 +480,7 @@ app.post('/api/materials', authenticate, requireKomti, multiUpload, async (req, 
 app.put('/api/materials/:id', authenticate, requireKomti, multiUpload, async (req, res) => {
   const { id } = req.params;
   const { title, course, url, type } = req.body;
-  let payload: any = { title, course, url: url || null, type };
+  let payload: any = { title, course, url: url && url.trim() ? url : '', type };
 
   const uploads = await processUploads(req.files);
   if (uploads.error) return res.status(400).json({ error: uploads.error });

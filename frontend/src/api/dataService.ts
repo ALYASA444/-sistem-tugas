@@ -17,6 +17,11 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 const handleResponse = async (response: Response): Promise<any> => {
+  if (response.status === 401) {
+    localStorage.removeItem('sistemkelas_auth');
+    window.location.href = '/login';
+    throw new Error('Sesi berakhir. Silakan login ulang.');
+  }
   const text = await response.text();
   if (!text) {
     if (!response.ok) throw new Error('Server error');

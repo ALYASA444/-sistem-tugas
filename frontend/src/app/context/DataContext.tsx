@@ -36,21 +36,22 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const { userId } = useRole();
 
   const refreshData = useCallback(async () => {
-    try {
-      const [tsks, anns, mats, usrs] = await Promise.all([
-        api.fetchTasks().catch(err => { console.error('fetchTasks error:', err); return []; }),
-        api.fetchAnnouncements().catch(err => { console.error('fetchAnnouncements error:', err); return []; }),
-        api.fetchMaterials().catch(err => { console.error('fetchMaterials error:', err); return []; }),
-        api.fetchUsers().catch(err => { console.error('fetchUsers error:', err); return []; }),
-      ]);
+    let errorCount = 0;
 
-      setTasks(tsks);
-      setAnnouncements(anns);
-      setMaterials(mats);
-      setUsers(usrs);
-    } catch (err) {
-      console.error('Gagal mengambil data dari server', err);
-      toast.error('Kehilangan koneksi ke Server');
+    const [tsks, anns, mats, usrs] = await Promise.all([
+      api.fetchTasks().catch(err => { console.error('fetchTasks error:', err); errorCount++; return []; }),
+      api.fetchAnnouncements().catch(err => { console.error('fetchAnnouncements error:', err); errorCount++; return []; }),
+      api.fetchMaterials().catch(err => { console.error('fetchMaterials error:', err); errorCount++; return []; }),
+      api.fetchUsers().catch(err => { console.error('fetchUsers error:', err); errorCount++; return []; }),
+    ]);
+
+    setTasks(tsks);
+    setAnnouncements(anns);
+    setMaterials(mats);
+    setUsers(usrs);
+
+    if (errorCount > 0) {
+      toast.error('Gagal mengambil data dari server. Periksa koneksi.');
     }
   }, []);
 

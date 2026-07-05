@@ -11,7 +11,7 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 interface AnnouncementFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (annData: Partial<Announcement>) => void;
+  onSubmit: (annData: Partial<Announcement>) => Promise<void>;
   onDelete?: () => void;
   initialData?: Announcement | null;
 }
@@ -171,9 +171,9 @@ export const AnnouncementFormModal = ({ isOpen, onClose, onSubmit, onDelete, ini
     <DeleteConfirmDialog
       isOpen={isDeleteDialogOpen}
       onClose={() => setIsDeleteDialogOpen(false)}
-      onConfirm={() => {
+      onConfirm={async () => {
         if (onDelete) {
-          onDelete();
+          await onDelete();
           setIsDeleteDialogOpen(false);
         }
       }}

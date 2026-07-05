@@ -12,7 +12,7 @@ import { AlertCircle } from "lucide-react";
 interface DeleteConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
   title: string;
   description: string;
 }

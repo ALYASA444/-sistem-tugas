@@ -10,7 +10,7 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 interface MaterialFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (matData: Partial<Material>) => void;
+  onSubmit: (matData: Partial<Material>) => Promise<void>;
   onDelete?: () => void;
   initialData?: Material | null;
 }
@@ -169,9 +169,9 @@ export const MaterialFormModal = ({ isOpen, onClose, onSubmit, onDelete, initial
     <DeleteConfirmDialog
       isOpen={isDeleteDialogOpen}
       onClose={() => setIsDeleteDialogOpen(false)}
-      onConfirm={() => {
+      onConfirm={async () => {
         if (onDelete) {
-          onDelete();
+          await onDelete();
           setIsDeleteDialogOpen(false);
         }
       }}
